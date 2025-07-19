@@ -1,0 +1,27 @@
+{
+    "name": "antonella-framework/antonella",
+    "description": "Core files for Antonella Framework",
+    "type": "module",
+    "license": "MIT",
+    "version": "1.0",
+    "autoload": {
+        "psr-4": {
+            "Antonella\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Carlos Herrera",
+            "email": "cehojac@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "symfony/console": "^4.0"
+    }
+}
