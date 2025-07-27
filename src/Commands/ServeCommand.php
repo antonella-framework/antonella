@@ -2,14 +2,10 @@
     
 namespace Antonella\Commands;
 
-use Dotenv\Dotenv;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
-use Symfony\Component\Console\Helper\ProgressBar;
-use InvalidArgumentException;
 
 /**
  *	@see https://symfony.com/doc/current/console.html
@@ -24,29 +20,10 @@ class ServeCommand extends BaseCommand {
 	 // the name of the command (the part after "antonella")
     protected static $defaultName = 'serve';
 	
-	// port
-	protected $port = '8010';
-	
-	//testdir
-	protected $testdir = 'wp-test';
-	
-	// locale
-	protected $locale = 'en_US';
-	
-	protected $plugindir = '';
-	
-	protected $origin = '';
-	
-	protected $destiny = '';
-	
-	
 	protected function configure()
     {
-        $this->setDescription('Create a server local')
-            ->setHelp('php antonella serve [--force]')
-			->addOption('port', null, InputOption::VALUE_REQUIRED, 'port', 8010)
-            ->addOption('force', null, InputOption::VALUE_NONE, 'refesh current value');
-       
+        $this->setDescription('Start Docker development environment')
+            ->setHelp('php antonella serve - Starts Docker from two levels up');
     }
  
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -57,145 +34,57 @@ class ServeCommand extends BaseCommand {
         $output->getFormatter()->setStyle('error', new OutputFormatterStyle('red', null, ['bold']));
         $output->getFormatter()->setStyle('comment', new OutputFormatterStyle('yellow', null, ['bold']));
         
-        $output->writeln('<info>🚀 Antonella Development Server</info>');
-        $output->writeln('   Starting local WordPress development environment...');
+        $output->writeln('<info>🐳 Docker Development Environment</info>');
+        $output->writeln('   Starting Docker containers from project root...');
         $output->writeln('');
-		
-		// retirve directory base
-		$dir = $this->getDirBase();		
-		
-		// obtenemos las options desde consola
-		$force = $input->getOption('force');
-		$port = $input->getOption('port') ?: $this->port;
-		
-		$output->writeln(sprintf('<info>🔧 Configuration: Port %s%s</info>', $port, $force ? ' (force mode)' : ''));
-		$output->writeln('');
-		
-		if (!file_exists('.env')) {
-            $output->writeln("<error>❌ Environment file missing: .env file not found</error>");
-            $output->writeln('<info>💡 Tip: Copy .env-example to .env and configure your settings</info>');
-            return 1;
-        }
-		
-		$dotenv = Dotenv::create($dir);
-		
-        $dotenv->load();
-        if (!getenv('DBNAME')) {
-            $output->writeln("<error>❌ Database configuration missing: DBNAME not set in .env file</error>");
-            $output->writeln('<info>💡 Tip: Set DBNAME in your .env file</info>');
-            return 1;
-        }
         
-		$dbname = getenv('DBNAME');
-        $dbuser = getenv('DBUSER');
-        $dbpass = getenv('DBPASS');
-        		
-		$testdir = getenv('TEST_DIR',$this->testdir);
-        $port = getenv('PORT',$this->port);
-		$locale = getenv('LOCALE',$this->locale);
-		$slash = DIRECTORY_SEPARATOR;
-        $pluginname = basename($dir);
-        $filename = basename($dir).'.zip';
-        $this->origen = $dir.$slash.$filename;
-        $this->destiny = $dir.$slash.basename($testdir).$slash.'wp-content'.$slash.'plugins'.$slash.$filename;
-        $this->plugindir = $dir.$slash.basename($testdir).$slash.'wp-content'.$slash.'plugins'.$slash.basename($dir);
-        $extra_php = '';
-		if ($force) $extra_php = ' --force';
-		
-		// instalamos el wp-cli
-		$this->InstallWPCLI();
-		
-		$output->writeln("");
-        if (!file_exists($testdir) && !is_dir($testdir)) {
-            $output->writeln("<info>Folder Test not exist!!! Creating the folder...</info>");
-            mkdir($testdir);
-        }
-        
-        if (!file_exists($testdir.$slash.'index.php')) {
-            $output->writeln("<info>Downloading WordPress [$locale]...</info>");
-            system("php wp-cli.phar core download --locale=$locale --path=$testdir");
-        }
-		
-		// si le pasamo el port y force como argumentos
-		if ($force && $input->getOption('port')) {
-			// seteamos el nuevo port
-			$port = $input->getOption('port')?$input->getOption('port'):$port;
-		}
-		
-		system("php wp-cli.phar config create --dbname=$dbname --dbuser=$dbuser --dbpass=$dbpass --path=$testdir  --extra-php=\" define( 'WP_DEBUG', true ); define( 'WP_DEBUG_LOG', true ); define( 'QM_ENABLE_CAPS_PANEL', true );  \" $extra_php");
-        system("php wp-cli.phar core install --url=localhost:$port --title=\"Antonella Framework Test\" --path=$testdir --admin_user=test --admin_password=test --admin_email=test@test.com --skip-email");
-        
-		
-		if ($force) {
-			// setea siteurl y homeurl
-			system("php wp-cli.phar option update home http://localhost:$port --path=$testdir --quiet");
-			system("php wp-cli.phar option update siteurl http://localhost:$port --path=$testdir --quiet");
-			
-		}
-		
-		// comprimimos nuetros plugin
-		$command = $this->getApplication()->find('makeup');
-		$greetInput = new ArrayInput([]);
-		$returnCode = $command->run($greetInput, $output);
-		
-		// unistall plugin
-		$this->uninstall();
-		
-		// install pluging
-        $this->install($output, $pluginname, $testdir, 
-		[
-			'show-current-template',
-			'debug-bar',
-			'query-monitor'
-		]);
-		
-		$output->writeln(sprintf("http://localhost:%s", $port));
-		$output->writeln("Remember: adminuser:test | password: test");
-        system("php -S localhost:$port --docroot=$testdir");
-	}
-	
-	public function InstallWPCLI() {
-        if (!file_exists(sprintf('%s/wp-cli.phar', $this->getDirBase()))) {
-            echo "Dowloading package wp-cliphar...\r\n";
-			system('curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar');
-        }
-    }
-	
-	private function uninstall() {
-		
-		if (file_exists($this->plugindir) && is_dir($this->plugindir)) {
-            $it = new \RecursiveDirectoryIterator($this->plugindir, \RecursiveDirectoryIterator::SKIP_DOTS);
-            $files = new \RecursiveIteratorIterator($it, \RecursiveIteratorIterator::CHILD_FIRST);
-            foreach ($files as $file) {
-                if ($file->isDir()) {
-                    rmdir($file->getRealPath());
-                } else {
-                    unlink($file->getRealPath());
-                }
+        try {
+            // Get current directory and navigate two levels up
+            $currentDir = $this->getDirBase();
+            $dockerDir = dirname(dirname($currentDir));
+            
+            $output->writeln(sprintf('<comment>📂 Current directory: %s</comment>', $currentDir));
+            $output->writeln(sprintf('<comment>🎯 Docker directory: %s</comment>', $dockerDir));
+            $output->writeln('');
+            
+            // Check if docker-compose.yml exists
+            $dockerComposePath = $dockerDir . DIRECTORY_SEPARATOR . 'docker-compose.yml';
+            if (!file_exists($dockerComposePath)) {
+                $output->writeln('<error>❌ docker-compose.yml not found in: ' . $dockerDir . '</error>');
+                $output->writeln('<info>💡 Tip: Make sure Docker Compose file exists two levels up from the framework</info>');
+                return 1;
             }
-            // rmdir($plugindir);
+            
+            $output->writeln('<success>✅ Found docker-compose.yml</success>');
+            $output->writeln('<info>🚀 Starting Docker containers...</info>');
+            $output->writeln('');
+            
+            // Change to docker directory and run docker-compose up
+            $command = sprintf('cd "%s" && docker-compose up', $dockerDir);
+            
+            $output->writeln('<comment>🔧 Executing: ' . $command . '</comment>');
+            $output->writeln('');
+            
+            // Execute the docker command
+            passthru($command, $returnCode);
+            
+            if ($returnCode === 0) {
+                $output->writeln('');
+                $output->writeln('<success>🎉 Docker containers started successfully!</success>');
+            } else {
+                $output->writeln('');
+                $output->writeln('<error>❌ Failed to start Docker containers</error>');
+                return $returnCode;
+            }
+            
+        } catch (\Exception $e) {
+            $output->writeln('<error>❌ Error: ' . $e->getMessage() . '</error>');
+            return 1;
         }
-		
-	}
-	
-	private function install($output, $pluginname, $testdir, $plugins = []) {
-		
-		file_exists($this->destiny) ? unlink($this->destiny) : false;
-        copy($this->origen, $this->destiny);
-        $zip = new \ZipArchive();
-        $res = $zip->open($this->destiny);
-        $zip->extractTo($this->plugindir);
-        $zip->close();
-        file_exists($this->destiny) ? unlink($this->destiny) : false;
-		
-		system("php wp-cli.phar plugin activate $pluginname --path=$testdir --quiet");
-        $output->writeln("Your plugin has been refreshed in test.");
-		
-		foreach ($plugins as $plugin)		
-			system("php wp-cli.phar plugin install $plugin --path=$testdir --activate --quiet");
         
-		
-	}
+        return 0;
+    }
+
 	
 	
 } /* generated with antollena framework */
