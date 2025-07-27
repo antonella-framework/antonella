@@ -5,6 +5,7 @@ namespace Antonella\Commands;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Input\InputOption;
  
 /**
@@ -33,11 +34,33 @@ class MakeShortcode extends BaseCommand {
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        // Setup custom styles for better visual output
+        $output->getFormatter()->setStyle('success', new OutputFormatterStyle('green', null, ['bold']));
+        $output->getFormatter()->setStyle('info', new OutputFormatterStyle('cyan', null, ['bold']));
+        $output->getFormatter()->setStyle('error', new OutputFormatterStyle('red', null, ['bold']));
+        $output->getFormatter()->setStyle('comment', new OutputFormatterStyle('yellow', null, ['bold']));
+        
+        $output->writeln('<info>📜 Shortcode Generator</info>');
+        $output->writeln('   Creating new WordPress shortcode...');
+        $output->writeln('');
 
         $data = $input->getArgument('data');
+        if (empty($data)) {
+            $output->writeln('<error>❌ Shortcode data cannot be empty</error>');
+            $output->writeln('<info>💡 Example: php antonella make:shortcode myshortcode:Controller@method</info>');
+            return 1;
+        }
+        
 		$option = $input->getOption('enque');
-		$this->makeShortcode($data, $output, $option);
-		
+        $output->writeln(sprintf('<comment>🔨 Generating shortcode: %s%s</comment>', $data, $option ? ' (with auto-enqueue)' : ''));
+        
+        try {
+            $this->makeShortcode($data, $output, $option);
+            return 0;
+        } catch (\Exception $e) {
+            $output->writeln('<error>❌ Error creating shortcode: ' . $e->getMessage() . '</error>');
+            return 1;
+        }
 	}
 
 	

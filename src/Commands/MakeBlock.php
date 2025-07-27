@@ -5,6 +5,7 @@ namespace Antonella\Commands;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Input\InputOption;
  
 /**
@@ -34,15 +35,42 @@ class MakeBlock extends BaseCommand {
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        // Setup custom styles for better visual output
+        $output->getFormatter()->setStyle('success', new OutputFormatterStyle('green', null, ['bold']));
+        $output->getFormatter()->setStyle('info', new OutputFormatterStyle('cyan', null, ['bold']));
+        $output->getFormatter()->setStyle('error', new OutputFormatterStyle('red', null, ['bold']));
+        $output->getFormatter()->setStyle('comment', new OutputFormatterStyle('yellow', null, ['bold']));
+        
+        $output->writeln('<info>🧩 Gutenberg Block Generator</info>');
+        $output->writeln('   Creating new WordPress Gutenberg block...');
+        $output->writeln('');
 
         $data = $input->getArgument('name');
+        if (empty($data)) {
+            $output->writeln('<error>❌ Block name cannot be empty</error>');
+            $output->writeln('<info>💡 Example: php antonella make:block namespace/blockname</info>');
+            return 1;
+        }
+        
 		$option = [
 			'callable' => $input->getOption('callable'),
 			'enque' => 	$input->getOption('enque')
 		];
 		
-		$this->makeGutenbergBlock($data, $output, $option);
-		
+        $optionsText = [];
+        if ($option['callable']) $optionsText[] = 'callable';
+        if ($option['enque']) $optionsText[] = 'auto-enqueue';
+        $optionsStr = !empty($optionsText) ? ' (' . implode(', ', $optionsText) . ')' : '';
+        
+        $output->writeln(sprintf('<comment>🔨 Generating Gutenberg block: %s%s</comment>', $data, $optionsStr));
+        
+        try {
+            $this->makeGutenbergBlock($data, $output, $option);
+            return 0;
+        } catch (\Exception $e) {
+            $output->writeln('<error>❌ Error creating block: ' . $e->getMessage() . '</error>');
+            return 1;
+        }
 	}
 
 	

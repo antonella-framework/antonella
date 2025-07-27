@@ -4,6 +4,8 @@ namespace Antonella\Commands;
 
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 
 /**
  *	@see https://symfony.com/doc/current/console.html
@@ -22,6 +24,15 @@ class SetNameCommand extends BaseCommand {
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        // Setup custom styles for better visual output
+        $output->getFormatter()->setStyle('success', new OutputFormatterStyle('green', null, ['bold']));
+        $output->getFormatter()->setStyle('info', new OutputFormatterStyle('cyan', null, ['bold']));
+        $output->getFormatter()->setStyle('error', new OutputFormatterStyle('red', null, ['bold']));
+        $output->getFormatter()->setStyle('comment', new OutputFormatterStyle('yellow', null, ['bold']));
+        
+        $output->writeln('<info>📛 Project Configuration Manager</info>');
+        $output->writeln('   Setting up project metadata and configuration...');
+        $output->writeln('');
 		
 		// valores por default
 		$params = [
@@ -30,6 +41,8 @@ class SetNameCommand extends BaseCommand {
 			'textdomain' => basename($this->getDirBase()),
 			'version' => '1.0'
 		];
+		
+		$output->writeln('<comment>🔍 Gathering project information...</comment>');
 		
 				
 		// valores desde git

@@ -5,6 +5,7 @@ namespace Antonella\Commands;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Input\InputOption;
  
 /**
@@ -33,11 +34,35 @@ class MakeWidget extends BaseCommand {
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        // Setup custom styles for better visual output
+        $output->getFormatter()->setStyle('success', new OutputFormatterStyle('green', null, ['bold']));
+        $output->getFormatter()->setStyle('info', new OutputFormatterStyle('cyan', null, ['bold']));
+        $output->getFormatter()->setStyle('error', new OutputFormatterStyle('red', null, ['bold']));
+        $output->getFormatter()->setStyle('comment', new OutputFormatterStyle('yellow', null, ['bold']));
+        
+        $output->writeln('<info>🧩 Widget Generator</info>');
+        $output->writeln('   Creating new WordPress widget...');
+        $output->writeln('');
 
-        $name = $this->prepare( ucfirst($input->getArgument('name')));
+        $inputName = $input->getArgument('name');
+        if (empty($inputName)) {
+            $output->writeln('<error>❌ Widget name cannot be empty</error>');
+            $output->writeln('<info>💡 Example: php antonella make:widget MyWidget</info>');
+            return 1;
+        }
+        
+        $name = $this->prepare(ucfirst($inputName));
         $option = $input->getOption('enque');
-		$this->makeWidget($name, $output, $option);
-		
+        
+        $output->writeln(sprintf('<comment>🔨 Generating widget: %s%s</comment>', $name, $option ? ' (with auto-enqueue)' : ''));
+        
+        try {
+            $this->makeWidget($name, $output, $option);
+            return 0;
+        } catch (\Exception $e) {
+            $output->writeln('<error>❌ Error creating widget: ' . $e->getMessage() . '</error>');
+            return 1;
+        }
 	}
 
 	

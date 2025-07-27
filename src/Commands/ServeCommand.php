@@ -7,6 +7,8 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
+use Symfony\Component\Console\Helper\ProgressBar;
 use InvalidArgumentException;
 
 /**
@@ -49,25 +51,39 @@ class ServeCommand extends BaseCommand {
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        // Setup custom styles for better visual output
+        $output->getFormatter()->setStyle('success', new OutputFormatterStyle('green', null, ['bold']));
+        $output->getFormatter()->setStyle('info', new OutputFormatterStyle('cyan', null, ['bold']));
+        $output->getFormatter()->setStyle('error', new OutputFormatterStyle('red', null, ['bold']));
+        $output->getFormatter()->setStyle('comment', new OutputFormatterStyle('yellow', null, ['bold']));
+        
+        $output->writeln('<info>🚀 Antonella Development Server</info>');
+        $output->writeln('   Starting local WordPress development environment...');
+        $output->writeln('');
 		
 		// retirve directory base
 		$dir = $this->getDirBase();		
 		
 		// obtenemos las options desde consola
 		$force = $input->getOption('force');
+		$port = $input->getOption('port') ?: $this->port;
 		
+		$output->writeln(sprintf('<info>🔧 Configuration: Port %s%s</info>', $port, $force ? ' (force mode)' : ''));
+		$output->writeln('');
 		
 		if (!file_exists('.env')) {
-            $output->writeln("<error>Antonella response: You need create and config the .env file. you have a .env-example file reference</error>");
-            die();
+            $output->writeln("<error>❌ Environment file missing: .env file not found</error>");
+            $output->writeln('<info>💡 Tip: Copy .env-example to .env and configure your settings</info>');
+            return 1;
         }
 		
 		$dotenv = Dotenv::create($dir);
 		
         $dotenv->load();
         if (!getenv('DBNAME')) {
-            $output->writeln("<error>Antonella response: You need config the DBNAME into .env file</error>");
-            die();
+            $output->writeln("<error>❌ Database configuration missing: DBNAME not set in .env file</error>");
+            $output->writeln('<info>💡 Tip: Set DBNAME in your .env file</info>');
+            return 1;
         }
         
 		$dbname = getenv('DBNAME');

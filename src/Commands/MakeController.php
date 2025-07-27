@@ -6,6 +6,7 @@ namespace Antonella\Commands;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 
 /**
  * @see https://code.tutsplus.com/es/tutorials/how-to-create-custom-cli-commands-using-the-symfony-console-component--cms-31274
@@ -32,13 +33,37 @@ class MakeController extends BaseCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        // Setup custom styles for better visual output
+        $output->getFormatter()->setStyle('success', new OutputFormatterStyle('green', null, ['bold']));
+        $output->getFormatter()->setStyle('info', new OutputFormatterStyle('cyan', null, ['bold']));
+        $output->getFormatter()->setStyle('error', new OutputFormatterStyle('red', null, ['bold']));
+        $output->getFormatter()->setStyle('comment', new OutputFormatterStyle('yellow', null, ['bold']));
+        
+        $output->writeln('<info>🏠 Controller Generator</info>');
+        $output->writeln('   Creating new controller class...');
+        $output->writeln('');
 
-        $name = $this->setNameController($input->getArgument('name'));
-
-        $this->makeController($name);
-        $output->writeln("<info>===================================================================</info>");
-        $output->writeln("<info>Controller $name created into src/Controllers folder</info>");
-        $output->writeln("<info>===================================================================</info>");
+        $inputName = $input->getArgument('name');
+        if (empty($inputName)) {
+            $output->writeln('<error>❌ Controller name cannot be empty</error>');
+            $output->writeln('<info>💡 Example: php antonella make:controller ExampleController</info>');
+            return 1;
+        }
+        
+        $name = $this->setNameController($inputName);
+        $output->writeln(sprintf('<comment>🔨 Generating controller: %s</comment>', $name));
+        
+        try {
+            $this->makeController($name);
+            $output->writeln('');
+            $output->writeln('<success>✅ Controller created successfully!</success>');
+            $output->writeln(sprintf('<info>📁 Location: src/Controllers/%s.php</info>', $name));
+            $output->writeln('<info>💡 You can now add methods to your controller</info>');
+            return 0;
+        } catch (\Exception $e) {
+            $output->writeln('<error>❌ Error creating controller: ' . $e->getMessage() . '</error>');
+            return 1;
+        }
     }
 
     /**

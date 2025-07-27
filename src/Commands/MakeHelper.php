@@ -5,6 +5,7 @@ namespace Antonella\Commands;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
  
 /**
   * @see https://code.tutsplus.com/es/tutorials/how-to-create-custom-cli-commands-using-the-symfony-console-component--cms-31274
@@ -29,11 +30,37 @@ class MakeHelper extends BaseCommand
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $name = rtrim($input->getArgument('name'), '.php');   // removemos el .php
-        $this->makeHelper($name);
-        $output->writeln("<info>======================================================</info>");
-        $output->writeln("<info>The Helper $name.php created into src/Helpers folder</info>");
-        $output->writeln("<info>======================================================</info>");
+        // Setup custom styles for better visual output
+        $output->getFormatter()->setStyle('success', new OutputFormatterStyle('green', null, ['bold']));
+        $output->getFormatter()->setStyle('info', new OutputFormatterStyle('cyan', null, ['bold']));
+        $output->getFormatter()->setStyle('error', new OutputFormatterStyle('red', null, ['bold']));
+        $output->getFormatter()->setStyle('comment', new OutputFormatterStyle('yellow', null, ['bold']));
+        
+        $output->writeln('<info>🔧 Helper Generator</info>');
+        $output->writeln('   Creating new helper class...');
+        $output->writeln('');
+
+        $inputName = $input->getArgument('name');
+        if (empty($inputName)) {
+            $output->writeln('<error>❌ Helper name cannot be empty</error>');
+            $output->writeln('<info>💡 Example: php antonella make:helper auxiliarHelper</info>');
+            return 1;
+        }
+        
+        $name = rtrim($inputName, '.php');   // removemos el .php
+        $output->writeln(sprintf('<comment>🔨 Generating helper: %s.php</comment>', $name));
+        
+        try {
+            $this->makeHelper($name);
+            $output->writeln('');
+            $output->writeln('<success>✅ Helper created successfully!</success>');
+            $output->writeln(sprintf('<info>📁 Location: src/Helpers/%s.php</info>', $name));
+            $output->writeln('<info>💡 You can now add utility functions to your helper</info>');
+            return 0;
+        } catch (\Exception $e) {
+            $output->writeln('<error>❌ Error creating helper: ' . $e->getMessage() . '</error>');
+            return 1;
+        }
     }
     /**
      * Crea un fichero helpers para albergar funciones auxiliares.
