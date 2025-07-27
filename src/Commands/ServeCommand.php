@@ -39,23 +39,22 @@ class ServeCommand extends BaseCommand {
         $output->writeln('');
         
         try {
-            // Get current directory and navigate two levels up
+            // Get current directory (framework directory)
             $currentDir = $this->getDirBase();
-            $dockerDir = dirname(dirname($currentDir));
+            $dockerDir = $currentDir; // Use current directory instead of going up
             
-            $output->writeln(sprintf('<comment>📂 Current directory: %s</comment>', $currentDir));
-            $output->writeln(sprintf('<comment>🎯 Docker directory: %s</comment>', $dockerDir));
+            $output->writeln(sprintf('<comment>📂 Working directory: %s</comment>', $currentDir));
             $output->writeln('');
             
-            // Check if docker-compose.yml exists
-            $dockerComposePath = $dockerDir . DIRECTORY_SEPARATOR . 'docker-compose.yml';
+            // Check if docker-compose.yaml exists in current directory
+            $dockerComposePath = $dockerDir . DIRECTORY_SEPARATOR . 'docker-compose.yaml';
             if (!file_exists($dockerComposePath)) {
-                $output->writeln('<error>❌ docker-compose.yml not found in: ' . $dockerDir . '</error>');
-                $output->writeln('<info>💡 Tip: Make sure Docker Compose file exists two levels up from the framework</info>');
+                $output->writeln('<error>❌ docker-compose.yaml not found in current directory: ' . $dockerDir . '</error>');
+                $output->writeln('<info>💡 Tip: Make sure Docker Compose file exists in the framework directory</info>');
                 return 1;
             }
             
-            $output->writeln('<success>✅ Found docker-compose.yml</success>');
+            $output->writeln('<success>✅ Found docker-compose.yaml</success>');
             $output->writeln('<info>🚀 Starting Docker containers...</info>');
             $output->writeln('');
             
