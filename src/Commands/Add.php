@@ -5,6 +5,9 @@ namespace Antonella\Commands;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
+use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
  
 /**
   * @see https://code.tutsplus.com/es/tutorials/how-to-create-custom-cli-commands-using-the-symfony-console-component--cms-31274
@@ -27,42 +30,110 @@ class Add extends BaseCommand
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        switch ($input->getArgument('module')) {
+        // Setup custom styles for better visual output
+        $output->getFormatter()->setStyle('success', new OutputFormatterStyle('green', null, ['bold']));
+        $output->getFormatter()->setStyle('warning', new OutputFormatterStyle('yellow', null, ['bold']));
+        $output->getFormatter()->setStyle('info', new OutputFormatterStyle('cyan', null, ['bold']));
+        $output->getFormatter()->setStyle('error', new OutputFormatterStyle('red', null, ['bold']));
+        
+        $module = $input->getArgument('module');
+        
+        switch ($module) {
             case 'blade':
-                return $this->AddBlade();
-                break;
+                return $this->AddBlade($input, $output);
             case 'dd':
-                return $this->AddDD();
-                break;
+                return $this->AddDD($input, $output);
             default:
-                $output->writeln($this->understant);
-                
+                $output->writeln('<error>❌ Unknown module: ' . $module . '</error>');
+                $output->writeln('<info>💡 Available modules: blade, dd</info>');
+                return 1;
         }
-        die();
 	}
-    protected function AddBlade()
+    protected function AddBlade(InputInterface $input, OutputInterface $output)
     {
-        echo "You need add blade? (Template system)  Type 'yes' or 'y' to continue: ";
-        $handle = fopen('php://stdin', 'r');
-        $line = fgets($handle);
-        echo $line;
-        fclose($handle);
-        if (trim($line) === 'yes' || trim($line) === 'y') {
-            echo "\n";
-            echo "Adding Blade... \n";
-            exec('composer require jenssegers/blade');
-            echo "Blade Added! \n";
-        } else {
-            echo "ABORTING!\n";
-            echo "Remember: if you need add blade only  type 'php antonella add blade' ";
-            exit;
+        $output->writeln('<info>🔧 Blade Template System Installation</info>');
+        $output->writeln('   Adding powerful template engine to your project...');
+        $output->writeln('');
+        
+        $helper = $this->getHelper('question');
+        $question = new ConfirmationQuestion('<info>❓ Do you want to install Blade template system? (y/N) </info>', false);
+        
+        if (!$helper->ask($input, $output, $question)) {
+            $output->writeln('<info>⚠️  Installation cancelled by user</info>');
+            $output->writeln('<info>💡 Tip: Run "php antonella add blade" anytime to install Blade</info>');
+            return 0;
         }
+        
+        $output->writeln('');
+        $output->writeln('<info>📦 Installing jenssegers/blade via Composer...</info>');
+        
+        // Create progress bar for visual feedback
+        $progressBar = new ProgressBar($output, 3);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %message%');
+        $progressBar->setMessage('Preparing installation...');
+        $progressBar->start();
+        
+        $progressBar->advance();
+        $progressBar->setMessage('Running composer require...');
+        sleep(1); // Small delay for visual effect
+        
+        exec('composer require jenssegers/blade 2>&1', $composerOutput, $returnCode);
+        
+        $progressBar->advance();
+        $progressBar->setMessage('Finalizing installation...');
+        sleep(1);
+        
+        $progressBar->finish();
+        $output->writeln('');
+        $output->writeln('');
+        
+        if ($returnCode === 0) {
+            $output->writeln('<success>✅ Blade template system successfully installed!</success>');
+            $output->writeln('<info>📚 You can now use Blade templates in your project</info>');
+        } else {
+            $output->writeln('<error>❌ Installation failed. Please check your composer configuration.</error>');
+            return 1;
+        }
+        
+        return 0;
     }
-    protected function AddDD()
+    protected function AddDD(InputInterface $input, OutputInterface $output)
     {
-        echo "\n";
-        echo "Adding Var-Dumper dd() ... \n";
-        exec('composer require symfony/var-dumper --dev');
-        echo "Var-Dumper dd() Added! \n";
+        $output->writeln('<info>🐛 Symfony Var-Dumper Installation</info>');
+        $output->writeln('   Adding powerful debugging tools (dd() function)...');
+        $output->writeln('');
+        
+        $output->writeln('<info>📦 Installing symfony/var-dumper as dev dependency...</info>');
+        
+        // Create progress bar for visual feedback
+        $progressBar = new ProgressBar($output, 3);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %message%');
+        $progressBar->setMessage('Preparing installation...');
+        $progressBar->start();
+        
+        $progressBar->advance();
+        $progressBar->setMessage('Running composer require --dev...');
+        sleep(1); // Small delay for visual effect
+        
+        exec('composer require symfony/var-dumper --dev 2>&1', $composerOutput, $returnCode);
+        
+        $progressBar->advance();
+        $progressBar->setMessage('Finalizing installation...');
+        sleep(1);
+        
+        $progressBar->finish();
+        $output->writeln('');
+        $output->writeln('');
+        
+        if ($returnCode === 0) {
+            $output->writeln('<success>✅ Symfony Var-Dumper successfully installed!</success>');
+            $output->writeln('<info>🎯 You can now use dd() and dump() functions for debugging</info>');
+            $output->writeln('<info>💡 Example: dd($variable); // Dies and dumps the variable</info>');
+        } else {
+            $output->writeln('<error>❌ Installation failed. Please check your composer configuration.</error>');
+            return 1;
+        }
+        
+        return 0;
     }
 }
