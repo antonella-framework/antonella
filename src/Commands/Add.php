@@ -23,9 +23,9 @@ class Add extends BaseCommand
     
     protected function configure()
     {
-        $this->setDescription('Add Antonella`s Modules. Now only is possible add blade and dd')
+        $this->setDescription('Add Antonella`s Modules. Now only is possible add blade, dd and model')
              ->setHelp('Demonstration of custom commands created by Symfony Console component.')
-             ->addArgument('module', InputArgument::REQUIRED, 'Blade or DD');
+             ->addArgument('module', InputArgument::REQUIRED, 'Blade, DD or Model');
     }
  
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -43,9 +43,11 @@ class Add extends BaseCommand
                 return $this->AddBlade($input, $output);
             case 'dd':
                 return $this->AddDD($input, $output);
+            case 'model':
+                return $this->AddModel($input, $output);
             default:
                 $output->writeln('<error>❌ Unknown module: ' . $module . '</error>');
-                $output->writeln('<info>💡 Available modules: blade, dd</info>');
+                $output->writeln('<info>💡 Available modules: blade, dd, model</info>');
                 return 1;
         }
 	}
@@ -131,6 +133,57 @@ class Add extends BaseCommand
             $output->writeln('<info>💡 Example: dd($variable); // Dies and dumps the variable</info>');
         } else {
             $output->writeln('<error>❌ Installation failed. Please check your composer configuration.</error>');
+            return 1;
+        }
+        
+        return 0;
+    }
+    
+    protected function AddModel(InputInterface $input, OutputInterface $output)
+    {
+        $output->writeln('<info>🗃️ WordPress Eloquent Models Installation</info>');
+        $output->writeln('   Adding powerful Eloquent ORM models for WordPress...');
+        $output->writeln('');
+        
+        $helper = $this->getHelper('question');
+        $question = new ConfirmationQuestion('<info>❓ Do you want to install WordPress Eloquent Models? (y/N) </info>', false);
+        
+        if (!$helper->ask($input, $output, $question)) {
+            $output->writeln('<info>⚠️  Installation cancelled by user</info>');
+            $output->writeln('<info>💡 Tip: Run "php antonella add model" anytime to install WordPress Eloquent Models</info>');
+            return 0;
+        }
+        
+        $output->writeln('');
+        $output->writeln('<info>📦 Installing antonella-framework/wordpress-eloquent-models via Composer...</info>');
+        
+        // Create progress bar for visual feedback
+        $progressBar = new ProgressBar($output, 3);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %message%');
+        $progressBar->setMessage('Preparing installation...');
+        $progressBar->start();
+        
+        $progressBar->advance();
+        $progressBar->setMessage('Running composer require...');
+        sleep(1); // Small delay for visual effect
+        
+        exec('composer require antonella-framework/wordpress-eloquent-models 2>&1', $composerOutput, $returnCode);
+        
+        $progressBar->advance();
+        $progressBar->setMessage('Finalizing installation...');
+        sleep(1);
+        
+        $progressBar->finish();
+        $output->writeln('');
+        $output->writeln('');
+        
+        if ($returnCode === 0) {
+            $output->writeln('<success>✅ WordPress Eloquent Models successfully installed!</success>');
+            $output->writeln('<info>📚 You can now use Eloquent ORM models for WordPress data</info>');
+            $output->writeln('<comment>💡 Tip: Use models like User, Post, Comment, etc. with Eloquent syntax</comment>');
+        } else {
+            $output->writeln('<error>❌ Installation failed. Please check your composer configuration.</error>');
+            $output->writeln('<info>💡 Make sure the package antonella-framework/wordpress-eloquent-models exists</info>');
             return 1;
         }
         

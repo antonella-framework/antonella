@@ -25,9 +25,9 @@ use Symfony\Component\Console\Formatter\OutputFormatterStyle;
     
     protected function configure()
     {
-        $this->setDescription('Remove Antonella`s Modules. Now only is possible add blade and dd')
+        $this->setDescription('Remove Antonella`s Modules. Now only is possible remove blade, dd and model')
              ->setHelp('Demonstration of custom commands created by Symfony Console component.')
-             ->addArgument('module', InputArgument::REQUIRED, 'Blade or DD');																		// OPTIONAL [--color=your-color] --or
+             ->addArgument('module', InputArgument::REQUIRED, 'Blade, DD or Model');																		// OPTIONAL [--color=your-color] --or
 																							//			[--color your-color]
     }
  
@@ -45,9 +45,11 @@ use Symfony\Component\Console\Formatter\OutputFormatterStyle;
                 return $this->RemoveBlade($input, $output);
             case 'dd':
                 return $this->RemoveDD($input, $output);
+            case 'model':
+                return $this->RemoveModel($input, $output);
             default:
                 $output->writeln('<error>❌ Unknown module: ' . $module . '</error>');
-                $output->writeln('<info>💡 Available modules: blade, dd</info>');
+                $output->writeln('<info>💡 Available modules: blade, dd, model</info>');
                 return 1;
         }
 	}
@@ -142,6 +144,57 @@ use Symfony\Component\Console\Formatter\OutputFormatterStyle;
             $output->writeln('<info>🧹 Blade templates are no longer available in your project</info>');
         } else {
             $output->writeln('<error>❌ Removal failed. Please check your composer configuration.</error>');
+            return 1;
+        }
+        
+        return 0;
+    }
+    
+    protected function RemoveModel(InputInterface $input, OutputInterface $output)
+    {
+        $output->writeln('<info>🗃️ WordPress Eloquent Models Removal</info>');
+        $output->writeln('   Removing Eloquent ORM models for WordPress...');
+        $output->writeln('');
+        
+        $helper = $this->getHelper('question');
+        $question = new ConfirmationQuestion('<info>❓ Are you sure you want to remove WordPress Eloquent Models? (y/N) </info>', false);
+        
+        if (!$helper->ask($input, $output, $question)) {
+            $output->writeln('<info>⚠️  Removal cancelled by user</info>');
+            $output->writeln('<info>💡 Tip: Run "php antonella remove model" anytime to remove WordPress Eloquent Models</info>');
+            return 0;
+        }
+        
+        $output->writeln('');
+        $output->writeln('<info>📦 Removing antonella-framework/wordpress-eloquent-models via Composer...</info>');
+        
+        // Create progress bar for visual feedback
+        $progressBar = new ProgressBar($output, 3);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %message%');
+        $progressBar->setMessage('Preparing removal...');
+        $progressBar->start();
+        
+        $progressBar->advance();
+        $progressBar->setMessage('Running composer remove...');
+        sleep(1); // Small delay for visual effect
+        
+        exec('composer remove antonella-framework/wordpress-eloquent-models 2>&1', $composerOutput, $returnCode);
+        
+        $progressBar->advance();
+        $progressBar->setMessage('Finalizing removal...');
+        sleep(1);
+        
+        $progressBar->finish();
+        $output->writeln('');
+        $output->writeln('');
+        
+        if ($returnCode === 0) {
+            $output->writeln('<success>✅ WordPress Eloquent Models successfully removed!</success>');
+            $output->writeln('<info>🧹 Eloquent ORM models are no longer available in your project</info>');
+            $output->writeln('<comment>💡 Tip: You can reinstall anytime with "php antonella add model"</comment>');
+        } else {
+            $output->writeln('<error>❌ Removal failed. Please check your composer configuration.</error>');
+            $output->writeln('<info>💡 Make sure the package antonella-framework/wordpress-eloquent-models is installed</info>');
             return 1;
         }
         
